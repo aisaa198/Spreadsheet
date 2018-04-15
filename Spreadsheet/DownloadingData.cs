@@ -1,49 +1,44 @@
 ﻿using System;
-using System.Text;
+using System.Collections.Generic;
 
 namespace Spreadsheet
 {
-    internal class DownloadingData
+    public class DownloadingData
     {
-        private readonly Calculating _calculating;
+        private readonly ICalculating _calculating;
+        private char _columnName = 'A';
 
-        public DownloadingData()
+        public DownloadingData(ICalculating calculating)
         {
-            _calculating = new Calculating();
+            _calculating = calculating;
         }
 
-        public void GetNumbers()
+        public List<Data> GetNumbers(string input, List<Data> table)
         {
-            var newItem = new StringBuilder();
-            ConsoleKeyInfo key;
-            var rowNumber = 'A';
-            var columnNumber = 0;
-            
-            do
+            var rowNumber = 1;
+
+            if (input.Length > 0 && input[input.Length - 1] == ';')
             {
-                do
+                input = input.TrimEnd(';');
+            }
+
+            var rowData = input.Split('|');
+            var nextRow = new List<Data>();
+
+            foreach (var item in rowData)
+            {
+                var result = _calculating.CalculateOperation(item.ToString(), table);
+                if (Double.TryParse(result, out Double number))
                 {
-                    do
-                    {
-                        key = Console.ReadKey();
-                        newItem.Append(key.KeyChar);
-                    } while (key.Key != ConsoleKey.Oem5 && (key.Key != ConsoleKey.Oem1) && (key.Key != ConsoleKey.Enter));
-                    newItem.Remove(newItem.Length - 1, 1);
-                    columnNumber++;
-                    var result = _calculating.CalculateOperation(newItem.ToString());
-                    if (result == null)
-                    {
-                        Console.WriteLine("Incorrect operation or syntax");
-                        System.Diagnostics.Process.GetCurrentProcess().Kill();
-                    }
-                    Data.Table.Add(rowNumber + columnNumber.ToString(), Double.Parse(result));
-                    newItem.Clear();
-                } while (key.Key != ConsoleKey.Enter && (key.Key != ConsoleKey.Oem1));
-                var top = Console.CursorTop;
-                Console.SetCursorPosition(0, top + 1);
-                rowNumber++;
-                columnNumber = 0;
-            } while (key.Key != ConsoleKey.Oem1);
+                    nextRow.Add(new Data { Address = _columnName + rowNumber.ToString(), Value = number });
+                    rowNumber++;
+                }
+                else return null;
+                
+            }
+
+            _columnName++;
+            return nextRow;
         }
     }
 }

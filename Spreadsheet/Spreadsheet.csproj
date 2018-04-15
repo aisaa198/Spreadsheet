@@ -45,6 +45,8 @@
     <Compile Include="Calculating.cs" />
     <Compile Include="Data.cs" />
     <Compile Include="DownloadingData.cs" />
+    <Compile Include="ICalculating.cs" />
+    <Compile Include="Pattern.cs" />
     <Compile Include="Program.cs" />
     <Compile Include="ProgramLoop.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />

@@ -6,129 +6,121 @@ using System.Text;
 
 namespace Spreadsheet
 {
-    public class Calculating
+    public class Calculating : ICalculating
     {
-        public string CalculateOperation(string operation)
+        private Pattern _pattern = new Pattern();
+        private List<char> _stack = new List<char>();
+        private List<char> _exit = new List<char>();
+
+        public string CalculateOperation(string operation, List<Data> table)
         {
-            var transformedOperation = TransformCellAddressToNumber(operation, Data.Table);
+            var transformedOperation = TransformCellAddressToNumber(operation, table);
             var operationInPostfixNotation = TransformToPostfixNotation(transformedOperation);
             var result = Calculate(operationInPostfixNotation);
+            _stack.Clear();
+            _exit.Clear();
+
             return result;
         }
 
-        private string TransformCellAddressToNumber(string input, Dictionary<string, double> dataTable)
+        public string TransformCellAddressToNumber(string input, List<Data> table)
         {
-            var x = new Regex("[A-Z]+[0-9]+");
             var transformedInput = new StringBuilder(input);
+            var matches = _pattern.CellAddress.Matches(input);
 
-            var matches = x.Matches(input);
             foreach (Match match in matches)
             {
-                if (dataTable.ContainsKey(match.Value))
-                {
-                    transformedInput.Replace(match.Value, dataTable[match.Value].ToString());
-                }
-                else
-                {
-                    Console.WriteLine($"{match.Value} is not found.");
-                    System.Diagnostics.Process.GetCurrentProcess().Kill();
-                }
+                var tableValue = table.Single(x => x.Address == match.Value).Value;
+                transformedInput.Replace(match.Value, tableValue.ToString());
             }
+
             return transformedInput.ToString();
         }
 
-        private string TransformToPostfixNotation(string operation)
+        public List<string> TransformToPostfixNotation(string operation)
         {
-            var stack = new List<char>();
-            var exit = new List<char>();
-            var digit = new Regex("[0-9]");
-            var firstPriority = new Regex("[*,/]");
-            var secondPriority = new Regex("[+,-]");
             var splitOperation = operation.ToCharArray();
 
             for (var i = 0; i < splitOperation.Length; i++)
             {
-                if (digit.IsMatch(splitOperation[i].ToString()) || splitOperation[i] == ',')
+                switch (splitOperation[i])
                 {
-                    exit.Add(splitOperation[i]);
-                }
-                else if (splitOperation[i] == '(')
-                {
-                    stack.Add(splitOperation[i]);
-                }
-                else if (splitOperation[i] == ')')
-                {
-                    for (var j = stack.Count - 1; j >= 0; j--)
-                    {
-                        if (stack[j] != '(')
+                    case var testChar when _pattern.Numbers.Contains(testChar):
+                        _exit.Add(splitOperation[i]);
+                        break;
+                    case '(':
+                        _stack.Add(splitOperation[i]);
+                        break;
+                    case ')':
+                        for (var j = _stack.Count - 1; j >= 0; j--)
                         {
-                            exit.Add(' ');
-                            exit.Add(stack[j]);
-                            exit.Add(' ');
-                            stack.RemoveAt(j);
+                            if (_stack[j] != '(')
+                            {
+                                AddToExit(_stack[j], j);
+                            }
+                            else
+                            {
+                                _stack.RemoveAt(j);
+                                break;
+                            }
                         }
-                        else
+                        break;
+                    case var testChar when _pattern.FirstPriority.Contains(testChar):
+                        _exit.Add(' ');
+                        while (_stack.Count > 0 && _pattern.FirstPriority.Contains(_stack[_stack.Count - 1]))
                         {
-                            stack.RemoveAt(j);
-                            break;
+                            AddToExit(_stack[_stack.Count - 1], _stack.Count - 1);
                         }
-                    }
-                }
-                else if (splitOperation[i] == '+' || splitOperation[i] == '-' || splitOperation[i] == '*' || splitOperation[i] == '/')
-                {
-                    exit.Add(' ');
-                    while (stack.Count > 0 && secondPriority.IsMatch(splitOperation[i].ToString()) && ((firstPriority.IsMatch(stack[stack.Count - 1].ToString()) || secondPriority.IsMatch(stack[stack.Count - 1].ToString()))))
-                    {
-                        exit.Add(stack[stack.Count - 1]);
-                        exit.Add(' ');
-                        stack.RemoveAt(stack.Count - 1);
-                    }
-                    while (stack.Count > 0 && firstPriority.IsMatch(splitOperation[i].ToString()) && firstPriority.IsMatch(stack[stack.Count - 1].ToString()))
-                    {
-                        exit.Add(stack[stack.Count - 1]);
-                        exit.Add(' ');
-                        stack.RemoveAt(stack.Count - 1);
-                    }
-
-                    stack.Add(splitOperation[i]);
-                }
-                else
-                {
-                    var top = Console.CursorTop;
-                    Console.SetCursorPosition(0, top + 1);
-                    Console.WriteLine("Incorrect operation or syntax");
-                    System.Diagnostics.Process.GetCurrentProcess().Kill();
+                        _stack.Add(splitOperation[i]);
+                        break;
+                    case var testChar when _pattern.SecondPriority.Contains(testChar):
+                        _exit.Add(' ');
+                        while (_stack.Count > 0 && (_pattern.FirstPriority.Contains(_stack[_stack.Count - 1]) || _pattern.SecondPriority.Contains(_stack[_stack.Count - 1])))
+                        {
+                            AddToExit(_stack[_stack.Count - 1], _stack.Count - 1);
+                        }
+                        _stack.Add(splitOperation[i]);
+                        break;
+                    default:
+                        return null;
                 }
             }
 
-            if (stack.Count > 0)
+            while(_stack.Count > 0)
             {
-                for (var k = stack.Count - 1; k >= 0; k--)
-                {
-                    exit.Add(' ');
-                    exit.Add(stack[k]);
-                    exit.Add(' ');
-                    stack.RemoveAt(k);
-                }
+                AddToExit(_stack[_stack.Count - 1], _stack.Count - 1);
             }
+            var result = String.Join("", _exit.ToArray()).Split(' ').Where(s => !string.IsNullOrWhiteSpace(s)).ToList();
 
-            return String.Join("", exit.ToArray());
+            return (result.Contains("(") || result.Contains(")"))? null : result;
         }
 
-        public string Calculate(string operation)
+        public void AddToExit(char x, int index = -1)
         {
-            var splitOperation = operation.Split(' ').Where(s => !string.IsNullOrWhiteSpace(s)).ToList();
-            var stack = new List<string>();
-            var digit = new Regex("[0-9]");
-            double result;
-            
-            foreach (var item in splitOperation)
+            _exit.Add(' ');
+            _exit.Add(x);
+            _exit.Add(' ');
+
+            if (index >= 0)
             {
-                if (digit.IsMatch(item))
+                _stack.RemoveAt(index);
+            }
+        }
+
+        public string Calculate(List<string> operation)
+        {
+            if (operation == null || operation.Count == 0) return null;
+            
+            var stack = new List<string>();
+            double result;
+
+            foreach (var item in operation)
+            {
+                if (item.ToCharArray().All(x => _pattern.Numbers.Contains(x)))
                 {
                     stack.Add(item);
                 }
-                else
+                else if (stack.Count > 1 && (_pattern.FirstPriority.Contains(Char.Parse(item)) || _pattern.SecondPriority.Contains(Char.Parse(item))))
                 {
                     var b = Double.Parse(stack[stack.Count - 1]);
                     var a = Double.Parse(stack[stack.Count - 2]);
@@ -138,16 +130,16 @@ namespace Spreadsheet
                     switch (item)
                     {
                         case "+":
-                            result = Add(a, b);
+                            result = a + b;
                             break;
                         case "-":
-                            result = Subtract(a, b);
+                            result = a - b;
                             break;
                         case "*":
-                            result = Multiply(a, b);
+                            result = a * b;
                             break;
                         case "/":
-                            result = Divide(a, b);
+                            result = a / b;
                             break;
                         default:
                             result = 0;
@@ -155,31 +147,11 @@ namespace Spreadsheet
                     }
                     stack.Add(result.ToString());
                 }
+                else return null;
             }
 
-            if (stack.Count == 0) return null;
-
-            return stack[stack.Count - 1].ToString();
-        }
-
-        private double Add(double a, double b)
-        {
-            return a + b;
-        }
-
-        private double Subtract(double a, double b)
-        {
-            return a - b;
-        }
-
-        private double Multiply(double a, double b)
-        {
-            return a * b;
-        }
-
-        private double Divide(double a, double b)
-        {
-            return a / b;
+            if (stack.Count != 1 || stack[0] == "") return null;
+            return stack[0].ToString();
         }
     }
 }

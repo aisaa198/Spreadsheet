@@ -5,6 +5,8 @@ VisualStudioVersion = 15.0.27130.2010
 MinimumVisualStudioVersion = 10.0.40219.1
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Spreadsheet", "Spreadsheet\Spreadsheet.csproj", "{A00900D8-1A98-4AE1-941D-95C3CB1EB166}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Spreadsheet.Test", "Spreadsheet.Test\Spreadsheet.Test.csproj", "{0F82A258-2D78-4E92-B916-C8197C2407EC}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -15,6 +17,10 @@ Global
 		{A00900D8-1A98-4AE1-941D-95C3CB1EB166}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{A00900D8-1A98-4AE1-941D-95C3CB1EB166}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{A00900D8-1A98-4AE1-941D-95C3CB1EB166}.Release|Any CPU.Build.0 = Release|Any CPU
+		{0F82A258-2D78-4E92-B916-C8197C2407EC}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{0F82A258-2D78-4E92-B916-C8197C2407EC}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{0F82A258-2D78-4E92-B916-C8197C2407EC}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{0F82A258-2D78-4E92-B916-C8197C2407EC}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

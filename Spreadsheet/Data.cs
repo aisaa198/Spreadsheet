@@ -1,9 +1,8 @@
-﻿using System.Collections.Generic;
-
-namespace Spreadsheet
+﻿namespace Spreadsheet
 {
-    internal class Data
+    public struct Data
     {
-        public static Dictionary<string, double> Table = new Dictionary<string, double>();
+        public string Address;
+        public double Value;
     }
 }
